@@ -6,28 +6,23 @@ let locationHistory = JSON.parse(localStorage.getItem("locationHistory")) || [];
  * @param {float} lat - The latitude of the user.
  * @param {float} lon - The longitude of the user.
  */
-function logLocation(lat, lon) {
+function logLocation(lat, lon, heading) {
     let timestamp = new Date().toLocaleTimeString();
-    let locationEntry = `${timestamp} - Latitude: ${lat}, Longitude: ${lon}`;
+    let headingText = heading !== null ? heading.toFixed(2) + "°" : "N/A";
+    let locationEntry = `${timestamp} - Latitude: ${lat}, Longitude: ${lon}, Heading: ${headingText}`;
 
-    // Retrieve the existing history from localStorage or create an empty array
     let storedHistory = JSON.parse(localStorage.getItem("locationHistory")) || [];
-
-    // Add the new entry
     storedHistory.push(locationEntry);
-
-    // Save the updated history back to localStorage
     localStorage.setItem("locationHistory", JSON.stringify(storedHistory));
 
-    // Update the log display on the webpage
     let logDiv = document.getElementById("locationLog");
     if (logDiv) {
         logDiv.innerHTML += `<p>${locationEntry}</p>`;
     }
 
-    // Debugging: Confirm it is being saved
     console.log("Updated locationHistory:", JSON.parse(localStorage.getItem("locationHistory")));
 }
+
 
 // Make sure logLocation is available globally
 window.logLocation = logLocation;
@@ -49,26 +44,22 @@ window.onload = function () {
  * Downloads the logged location history as a .txt file.
  */
 function downloadHistory() {
-    // Reload history from localStorage to ensure it includes recent updates
-    locationHistory = JSON.parse(localStorage.getItem("locationHistory")) || [];
+    let storedHistory = JSON.parse(localStorage.getItem("locationHistory")) || [];
 
-    // Check if there is any location data to download
-    if (locationHistory.length === 0) {
+    if (storedHistory.length === 0) {
         alert("No location history to download.");
         return;
     }
 
-    // Convert the location history array into a text string
-    let historyText = locationHistory.join("\n");
+    let historyText = storedHistory.join("\n");
 
-    // Create a downloadable text file
     let blob = new Blob([historyText], { type: "text/plain" });
     let link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
     link.download = "location_history.txt";
 
-    // Append the link to the document, trigger a click, and remove it
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
 }
+
