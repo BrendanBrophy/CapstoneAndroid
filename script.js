@@ -49,30 +49,43 @@ function requestPermission() {
         DeviceMotionEvent.requestPermission()
             .then(permissionState => {
                 if (permissionState === 'granted') {
-                    startCompass();
+                    DeviceOrientationEvent.requestPermission()
+                        .then(permissionState => {
+                            if (permissionState === 'granted') {
+                                startCompass();
+                                alert("Compass enabled! Move your phone to test.");
+                            } else {
+                                alert("Permission denied for orientation.");
+                            }
+                        })
+                        .catch(error => console.error("Orientation permission error:", error));
                 } else {
-                    alert("Permission denied. Cannot access motion data.");
+                    alert("Permission denied for motion.");
                 }
             })
-            .catch(console.error);
+            .catch(error => console.error("Motion permission error:", error));
     } else {
+        // If not an iPhone, start compass directly
         startCompass();
     }
 }
+
 
 /**
  * Start listening for device orientation changes (heading)
  */
 function startCompass() {
     if (!compassActive) {
-        window.addEventListener("deviceorientation", event => {
+        window.addEventListener("deviceorientationabsolute", event => {
             if (event.alpha !== null) {
                 userHeading = event.alpha;
+                console.log("Updated Heading:", userHeading);
             }
         });
         compassActive = true;
     }
 }
+
 
 /**
  * Downloads the logged location history as a .txt file.
