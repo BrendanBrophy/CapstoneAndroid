@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>iPhone Motion Test</title>
+</head>
+<body>
+    <h1>iPhone Compass Test</h1>
+    <button onclick="requestMotionPermission()">Enable Motion</button>
+    <p id="status">Waiting for motion data...</p>
+
+    <script>
+        function requestMotionPermission() {
+            if (typeof DeviceMotionEvent.requestPermission === 'function') {
+                DeviceMotionEvent.requestPermission()
+                    .then(permissionState => {
+                        if (permissionState === 'granted') {
+                            return DeviceOrientationEvent.requestPermission();
+                        } else {
+                            document.getElementById("status").innerText = "Motion permission denied.";
+                        }
+                    })
+                    .then(permissionState => {
+                        if (permissionState === 'granted') {
+                            document.getElementById("status").innerText = "Permission granted! Move your phone.";
+                            startCompass();
+                        } else {
+                            document.getElementById("status").innerText = "Orientation permission denied.";
+                        }
+                    })
+                    .catch(error => {
+                        console.error("Permission error:", error);
+                        document.getElementById("status").innerText = "Error requesting permission.";
+                    });
+            } else {
+                document.getElementById("status").innerText = "DeviceMotionEvent not required.";
+                startCompass();
+            }
+        }
+
+        function startCompass() {
+            window.addEventListener("deviceorientationabsolute", event => {
+                if (event.alpha !== null) {
+                    document.getElementById("status").innerText = `Heading: ${event.alpha.toFixed(2)}°`;
+                    console.log("Updated Heading:", event.alpha);
+                }
+            });
+        }
+    </script>
+</body>
+</html>
