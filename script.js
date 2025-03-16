@@ -1,10 +1,13 @@
 // Ensure location history is initialized from localStorage
 let locationHistory = JSON.parse(localStorage.getItem("locationHistory")) || [];
+let userHeading = null;
+let compassActive = false;
 
 /**
  * Logs the user's location, updates the UI, and stores data in localStorage.
  * @param {float} lat - The latitude of the user.
  * @param {float} lon - The longitude of the user.
+ * @param {float} heading - The heading direction of the user.
  */
 function logLocation(lat, lon, heading) {
     let timestamp = new Date().toLocaleTimeString();
@@ -23,7 +26,6 @@ function logLocation(lat, lon, heading) {
     console.log("Updated locationHistory:", JSON.parse(localStorage.getItem("locationHistory")));
 }
 
-
 // Make sure logLocation is available globally
 window.logLocation = logLocation;
 
@@ -39,6 +41,38 @@ window.onload = function () {
     }
 };
 
+/**
+ * Request permission for motion access on iOS
+ */
+function requestPermission() {
+    if (typeof DeviceMotionEvent.requestPermission === 'function') {
+        DeviceMotionEvent.requestPermission()
+            .then(permissionState => {
+                if (permissionState === 'granted') {
+                    startCompass();
+                } else {
+                    alert("Permission denied. Cannot access motion data.");
+                }
+            })
+            .catch(console.error);
+    } else {
+        startCompass();
+    }
+}
+
+/**
+ * Start listening for device orientation changes (heading)
+ */
+function startCompass() {
+    if (!compassActive) {
+        window.addEventListener("deviceorientation", event => {
+            if (event.alpha !== null) {
+                userHeading = event.alpha;
+            }
+        });
+        compassActive = true;
+    }
+}
 
 /**
  * Downloads the logged location history as a .txt file.
@@ -62,4 +96,3 @@ function downloadHistory() {
     link.click();
     document.body.removeChild(link);
 }
-
