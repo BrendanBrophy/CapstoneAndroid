@@ -8,8 +8,37 @@ const timeEl = document.getElementById("timestamp");
 
 let currentHeading = "--";
 
+function handleOrientation(e) {
+  if (e.alpha !== null) {
+    currentHeading = Math.round(e.alpha);
+    headingEl.textContent = currentHeading + "°";
+
+    const headingImg = document.querySelector(".heading-img");
+    if (headingImg) {
+      headingImg.style.transform = `rotate(${currentHeading}deg)`;
+    }
+  }
+}
+
+// Ask permission for device orientation (required on iOS)
+if (typeof DeviceOrientationEvent?.requestPermission === 'function') {
+  DeviceOrientationEvent.requestPermission()
+    .then(permissionState => {
+      if (permissionState === 'granted') {
+        window.addEventListener("deviceorientation", handleOrientation);
+      } else {
+        console.warn("Permission to access heading denied.");
+      }
+    })
+    .catch(console.error);
+} else {
+  // For browsers that don't require permission
+  window.addEventListener("deviceorientation", handleOrientation);
+}
+
 if (window.DeviceOrientationEvent) {
     window.addEventListener("deviceorientation", (e) => {
+      console.log("Heading event:", e.alpha);
       if (e.alpha !== null) {
         currentHeading = Math.round(e.alpha);
         headingEl.textContent = currentHeading + "°";
@@ -70,6 +99,8 @@ function updatePosition(pos) {
     fillOpacity: 0.9,
     weight: 2
   }).addTo(map);
+
+  
   
   }
   
