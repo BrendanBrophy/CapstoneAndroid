@@ -8,6 +8,31 @@ const timeEl = document.getElementById("timestamp");
 
 let currentHeading = "--";
 
+const compassBtn = document.getElementById("enableCompass");
+
+compassBtn.addEventListener("click", async () => {
+  if (typeof DeviceOrientationEvent?.requestPermission === "function") {
+    try {
+      const state = await DeviceOrientationEvent.requestPermission();
+      if (state === "granted") {
+        window.addEventListener("deviceorientation", handleOrientation);
+        alert("Compass enabled.");
+        compassBtn.disabled = true;
+      } else {
+        alert("Permission denied for heading.");
+      }
+    } catch (err) {
+      console.error("Compass permission error:", err);
+      alert("Compass error: " + err.message);
+    }
+  } else {
+    // Fallback for non-iOS or older browsers
+    window.addEventListener("deviceorientation", handleOrientation);
+    alert("Compass activated.");
+    compassBtn.disabled = true;
+  }
+});
+
 // Handle compass heading
 function handleOrientation(e) {
   console.log("Heading event:", e.alpha); // Debug log
