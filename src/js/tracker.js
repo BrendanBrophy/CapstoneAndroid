@@ -11,24 +11,26 @@ let currentHeading = "--";
 const compassBtn = document.getElementById("enableCompass");
 
 compassBtn.addEventListener("click", async () => {
+  alert("Button clicked!"); // ← diagnostic
+
   if (typeof DeviceOrientationEvent?.requestPermission === "function") {
     try {
       const state = await DeviceOrientationEvent.requestPermission();
+      alert("Permission state: " + state); // ← debug
+
       if (state === "granted") {
         window.addEventListener("deviceorientation", handleOrientation);
         alert("Compass enabled.");
         compassBtn.disabled = true;
       } else {
-        alert("Permission denied for heading.");
+        alert("Permission denied.");
       }
     } catch (err) {
-      console.error("Compass permission error:", err);
       alert("Compass error: " + err.message);
     }
   } else {
-    // Fallback for non-iOS or older browsers
+    alert("Fallback mode enabled.");
     window.addEventListener("deviceorientation", handleOrientation);
-    alert("Compass activated.");
     compassBtn.disabled = true;
   }
 });
