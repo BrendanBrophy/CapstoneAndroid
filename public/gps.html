@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <meta charset="UTF-8">
+    <title>GPS Tracker | Detect-Capstone2025</title>
+    <link rel="stylesheet" href="../src/css/gps.css">
+     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div id="map"></div>
+  <header class="main-header">
+    <h1>GPS Tracker</h1>
+    <button onclick="logout()" class="logout-btn">Log Out</button>
+  </header>
+
+  <main class="tracker-content">
+    <section class="status-display">
+      <h2>Live Data</h2>
+      <p><strong>Latitude:</strong> <span id="lat">--</span></p>
+      <p><strong>Longitude:</strong> <span id="lng">--</span></p>
+      <p><strong>Heading:</strong> <span id="heading">--</span></p>
+      <p><strong>Time:</strong> <span id="timestamp">--</span></p>
+    </section>
+
+    <section class="actions">
+      <button id="markTakeOff">Mark Take-Off Location</button>
+      <div class="note-form">
+        <input type="text" id="noteInput" placeholder="Enter note..." />
+        <button id="dropNote">Drop Note</button>
+      </div>
+      <div class="tracking-controls">
+        <button id="startTracking">Start Tracking</button>
+        <button id="stopTracking" disabled>Stop Tracking</button>
+      </div>
+      
+    </section>
+
+    <section class="log-table">
+      <h2>Logged Data</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Time</th>
+            <th>Lat</th>
+            <th>Lng</th>
+            <th>Heading</th>
+            <th>Note</th>
+            <th>Take-Off</th>
+          </tr>
+        </thead>
+        <tbody id="logBody">
+          <!-- Entries will be injected here -->
+        </tbody>
+      </table>
+    </section>
+
+    <section class="export">
+      <button id="exportData">Export as CSV</button>
+    </section>
+  </main>
+
+  <script src="../src/js/tracker.js"></script>
+  <script src="../src/js/noteManager.js"></script>
+  <script src="../src/js/exporter.js"></script>
+  <script>
+    function logout() {
+      localStorage.removeItem("loggedIn");
+      window.location.href = "login.html";
+    }
+  </script>
+</body>
+</html>
