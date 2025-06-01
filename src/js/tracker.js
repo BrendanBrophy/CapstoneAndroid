@@ -15,33 +15,35 @@ document.addEventListener("DOMContentLoaded", () => {
 
   if (compassBtn) {
     compassBtn.addEventListener("click", async () => {
-      alert("Button clicked!"); // Debug
-
+      // Try to request permission
       if (typeof DeviceOrientationEvent?.requestPermission === "function") {
         try {
           const state = await DeviceOrientationEvent.requestPermission();
-          alert("Permission state: " + state);
-
           if (state === "granted") {
             window.addEventListener("deviceorientation", handleOrientation);
-            alert("Compass enabled.");
+            compassBtn.textContent = "Compass Enabled";
             compassBtn.disabled = true;
+            setTimeout(() => compassBtn.style.display = "none", 1000); // hide after 1 sec
           } else {
-            alert("Permission denied.");
+            alert("Permission denied for heading.");
           }
         } catch (err) {
+          console.error("Compass permission error:", err);
           alert("Compass error: " + err.message);
         }
       } else {
-        alert("Fallback mode enabled.");
+        // Fallback for non-iOS devices
         window.addEventListener("deviceorientation", handleOrientation);
+        compassBtn.textContent = "Compass Enabled";
         compassBtn.disabled = true;
+        setTimeout(() => compassBtn.style.display = "none", 1000);
       }
     });
   } else {
     console.warn("Enable Compass button not found.");
   }
 });
+
 
 // Handle compass heading
 function handleOrientation(e) {
