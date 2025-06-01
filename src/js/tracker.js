@@ -10,28 +10,36 @@ let currentHeading = "--";
 
 const compassBtn = document.getElementById("enableCompass");
 
-compassBtn.addEventListener("click", async () => {
-  alert("Button clicked!"); // ← diagnostic
+document.addEventListener("DOMContentLoaded", () => {
+  const compassBtn = document.getElementById("enableCompass");
 
-  if (typeof DeviceOrientationEvent?.requestPermission === "function") {
-    try {
-      const state = await DeviceOrientationEvent.requestPermission();
-      alert("Permission state: " + state); // ← debug
+  if (compassBtn) {
+    compassBtn.addEventListener("click", async () => {
+      alert("Button clicked!"); // Debug
 
-      if (state === "granted") {
-        window.addEventListener("deviceorientation", handleOrientation);
-        alert("Compass enabled.");
-        compassBtn.disabled = true;
+      if (typeof DeviceOrientationEvent?.requestPermission === "function") {
+        try {
+          const state = await DeviceOrientationEvent.requestPermission();
+          alert("Permission state: " + state);
+
+          if (state === "granted") {
+            window.addEventListener("deviceorientation", handleOrientation);
+            alert("Compass enabled.");
+            compassBtn.disabled = true;
+          } else {
+            alert("Permission denied.");
+          }
+        } catch (err) {
+          alert("Compass error: " + err.message);
+        }
       } else {
-        alert("Permission denied.");
+        alert("Fallback mode enabled.");
+        window.addEventListener("deviceorientation", handleOrientation);
+        compassBtn.disabled = true;
       }
-    } catch (err) {
-      alert("Compass error: " + err.message);
-    }
+    });
   } else {
-    alert("Fallback mode enabled.");
-    window.addEventListener("deviceorientation", handleOrientation);
-    compassBtn.disabled = true;
+    console.warn("Enable Compass button not found.");
   }
 });
 
