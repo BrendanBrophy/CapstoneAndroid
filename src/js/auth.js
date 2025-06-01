@@ -24,7 +24,7 @@ const demoUsers = {
   
     if (demoUsers[username] && demoUsers[username] === password) {
       localStorage.setItem("loggedIn", "true");
-      window.location.href = "gps.html";
+      window.location.href = "public/gps.html";
     } else {
       document.getElementById("message").textContent = "Invalid login.";
     }
