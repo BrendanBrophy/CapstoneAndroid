@@ -33,7 +33,7 @@
         <button id="dropNote">Drop Note</button>
       </div>
       <div class="tracking-controls">
-        <button id="enableCompass">Enable Compass</button>
+        <button disabled style="background-color: #ccc;">Compass Enabled</button>
         <button id="startTracking">Start Tracking</button>
         <button id="stopTracking" disabled>Stop Tracking</button>
       </div>
@@ -63,7 +63,7 @@
       <button id="exportData">Export as CSV</button>
     </section>
   </main>
-  
+
   <script>
   window.updateHeading = function (degrees) {
     const h = document.getElementById("heading");
