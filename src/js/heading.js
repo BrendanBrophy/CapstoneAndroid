@@ -1,19 +1,14 @@
-let headingHandler = null;
+// heading.js
 
-function startHeading(onHeadingUpdate) {
-  headingHandler = function (e) {
-    if (e.alpha !== null) {
-      const heading = Math.round(e.alpha);
-      onHeadingUpdate(heading);
-    }
-  };
-
-  window.addEventListener("deviceorientation", headingHandler);
-}
-
-function stopHeading() {
-  if (headingHandler) {
-    window.removeEventListener("deviceorientation", headingHandler);
-    headingHandler = null;
+// This function is called from Kotlin using evaluateJavascript()
+// It will receive true north heading in degrees
+window.updateHeading = function(degrees) {
+  const headingDisplay = document.getElementById("heading");
+  if (headingDisplay) {
+    headingDisplay.textContent = degrees + "°";
   }
-}
+};
+
+// (Optional) Comment out old browser-based heading code if present:
+// window.addEventListener("deviceorientationabsolute", ...);
+// window.addEventListener("deviceorientation", ...);
