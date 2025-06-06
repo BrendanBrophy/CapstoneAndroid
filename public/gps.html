@@ -64,6 +64,13 @@
     </section>
   </main>
   
+  <script>
+  window.updateHeading = function (degrees) {
+    const h = document.getElementById("heading");
+    if (h) h.textContent = degrees + "°";
+  };
+</script>
+
   <script src="https://unpkg.com/geomagnetism@1.2.4/dist/geomagnetism.min.js"></script>
   <script src="../src/js/gps.js"></script>
   <script src="../src/js/heading.js"></script>
