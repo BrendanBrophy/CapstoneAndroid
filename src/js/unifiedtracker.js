@@ -40,21 +40,12 @@ function initMap() {
 window.addEventListener("DOMContentLoaded", () => {
   initMap();
 
-  document.getElementById("startTracking").addEventListener("click", () => {
-    isTracking = true;
-    document.getElementById("stopTracking").disabled = false;
-    document.getElementById("startTracking").disabled = true;
+document.getElementById("startTracking").addEventListener("click", () => {
+  isTracking = true;
+  document.getElementById("stopTracking").disabled = false;
+  document.getElementById("startTracking").disabled = true;
+});
 
-    if ("geolocation" in navigator && !window._browserGPSStarted) {
-      window._browserGPSStarted = true;
-      navigator.geolocation.watchPosition(pos => {
-        const lat = pos.coords.latitude;
-        const lng = pos.coords.longitude;
-        const ts = Date.now();
-        window.updateGPS(lat, lng, ts.toString());
-      });
-    }
-  });
 
   document.getElementById("stopTracking").addEventListener("click", () => {
     isTracking = false;
