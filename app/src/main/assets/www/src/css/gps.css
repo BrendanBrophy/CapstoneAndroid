@@ -1,0 +1,332 @@
+/* Reset & Base Styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+  
+  body {
+    font-family: 'Space Grotesk', sans-serif;
+    background-color: #efefef;
+    color: #444;
+    padding: 1rem;
+  }
+  
+  /* Header */
+  .main-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #164668;
+    color: white;
+    padding: 1rem;
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+  }
+  
+  .main-header h1 {
+    font-size: 1.5rem;
+  }
+  
+  .logout-btn {
+    background-color: #08a18b;
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+  }
+  
+  .logout-btn:hover {
+    background-color: #41eac0;
+  }
+  
+  /* Content Sections */
+  .tracker-content section {
+    margin-bottom: 1.5rem;
+  }
+  
+  .status-display p {
+    margin-bottom: 0.5rem;
+    font-size: 1rem;
+  }
+  
+  /* Actions */
+  .actions {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .note-form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .note-form input {
+    padding: 0.5rem;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+  }
+  
+  .note-form button,
+  #markTakeOff {
+    background-color: #08a18b;
+    color: white;
+    border: none;
+    padding: 0.6rem;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  
+  .note-form button:hover,
+  #markTakeOff:hover {
+    background-color: #41eac0;
+  }
+  
+  /* Table */
+  .log-table table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+  }
+  
+  .log-table th,
+  .log-table td {
+    padding: 0.5rem;
+    border: 1px solid #ccc;
+    text-align: center;
+  }
+  
+  .log-table th {
+    background-color: #164668;
+    color: white;
+  }
+  
+  /* Export Button */
+  .export button {
+    background-color: #164668;
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  
+  .export button:hover {
+    background-color: #0d2f46;
+  }
+  
+  /* Responsive Design */
+  @media (max-width: 600px) {
+    .main-header {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.5rem;
+    }
+  
+    .note-form {
+      flex-direction: column;
+    }
+  
+    .note-form input,
+    .note-form button {
+      width: 100%;
+    }
+  }
+
+  #map {
+    height: 300px;
+    width: 100%;
+    margin-bottom: 1.5rem;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+  }
+  
+  .tracking-controls {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
+  
+  .tracking-controls button {
+    background-color: #164668;
+    color: white;
+    border: none;
+    padding: 0.6rem 1rem;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  
+  .tracking-controls button:disabled {
+    background-color: #999;
+    cursor: not-allowed;
+  }
+  #markTakeOff {
+    background-color: #08a18b;
+    color: white;
+    border: none;
+    padding: 0.6rem 1rem;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 1rem;
+  }
+  
+  #markTakeOff:hover {
+    background-color: #41eac0;
+  }
+
+  .heading-img {
+    width: 40px;
+    height: 40px;
+    transform-origin: center;
+    transition: transform 0.2s linear;
+  }
+  
+  /* Align buttons and dropdown in one row */
+  .app-utility {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  /* Make dropdown look like a button */
+  .transport-select {
+    background-color: #007bff;  /* same blue as Recenter Map */
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 10px 16px;
+    font-weight: 600;
+    cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    text-align: center;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+  }
+
+  .transport-select:hover {
+    filter: brightness(0.9);
+  }
+
+  .transport-select:focus {
+    outline: 2px solid rgba(0, 123, 255, 0.5);
+    outline-offset: 2px;
+  }
+
+/* --- Voice-to-Text Mic Button Styles --- */
+.note-input-wrap {
+  position: relative;
+  display: inline-flex;
+  width: 100%;
+  max-width: 520px;
+}
+
+.note-input-wrap input {
+  padding-right: 44px; /* space for mic */
+  width: 100%;
+}
+
+.mic-btn {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  border: none;
+  border-radius: 6px;
+  padding: 6px 10px;
+  cursor: pointer;
+  background: #164668; /* same blue as header */
+  color: #fff;
+  font-weight: 600;
+}
+
+.mic-btn:hover {
+  filter: brightness(0.9);
+}
+
+.mic-btn.recording {
+  background: #e74c3c; /* red while recording */
+}
+
+.mic-status {
+  color: #666;
+  margin-top: 6px;
+  font-size: 0.9rem;
+}
+
+@media (max-width: 600px) {
+  .note-input-wrap {
+    max-width: none;
+  }
+}.note-row{
+  display:flex; align-items:center; gap:10px; width:100%;
+}
+
+.note-input-wrap{
+  position:relative; display:inline-flex; flex:1; min-width:0;
+}
+.note-input-wrap input{ width:100%; padding-right:40px; }
+
+.mic-icon{
+  position:absolute; right:10px; top:50%; transform:translateY(-50%);
+  font-size:1.2rem; cursor:pointer; color:#164668; transition:transform .1s,color .2s;
+}
+.mic-icon:hover{ transform:translateY(-50%) scale(1.15); color:#08a18b; }
+.mic-icon.recording{ color:#e74c3c; }
+
+.note-lang{
+  width:84px; min-width:74px;
+  padding:8px 10px;
+  border:1px solid #ccc; border-radius:6px; background:#fff; color:#444;
+  font-weight:600; text-align:center;
+}
+
+@media (max-width:600px){
+  .note-row{ flex-direction:column; align-items:stretch; }
+  .note-lang{ width:100%; }
+}
+
+/*Download Map*/
+.pd-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  display: none; /* hidden by default */
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+.pd-modal-inner {
+  background: #fff;
+  padding: 16px 20px;
+  border-radius: 8px;
+  max-width: 320px;
+  width: 90%;
+  font-size: 14px;
+}
+.pd-modal-inner label {
+  display:block;
+  margin-top:6px;
+}
+
+.shake {
+  animation: shakeAnim 0.3s;
+}
+
+@keyframes shakeAnim {
+  0% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  50% { transform: translateX(4px); }
+  75% { transform: translateX(-4px); }
+  100% { transform: translateX(0); }
+}
