@@ -10,13 +10,15 @@ window.onerror = function (msg, url, line, col, error) {
 // ---------------------------
 // GLOBAL STATE
 // ---------------------------
+let activeUser = localStorage.getItem("loggedInUser") || "Unknown";
 let isTracking = false;
 let trackingLog = [];
 let pathCoordinates = [];
 
-let map, liveMarker, pathLine, headingLine, takeOffMarker;
+// MAP OBJECTS DISABLED
+let map = null, liveMarker = null, pathLine = null, headingLine = null, takeOffMarker = null;
 
-let currentHeading = 0;           // from GPS course if available
+let currentHeading = 0;
 let autoFollow = true;
 let usingDeviceGPS = false;
 let geoWatchId = null;
@@ -39,41 +41,19 @@ function getDirectionFromHeading(deg) {
   return dirs[index];
 }
 
-// ---------------------------
-// MAP INIT
-// ---------------------------
-function initMap() {
-  map = L.map("map").setView([0, 0], 16);
+/* =====================
+   MAP FULLY DISABLED
+====================== */
 
-  L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-    attribution: "&copy; OpenStreetMap contributors",
-  }).addTo(map);
-
-  liveMarker = L.marker([0, 0]).addTo(map);
-
-  headingLine = L.polyline(
-    [
-      [0, 0],
-      [0, 0],
-    ],
-    {
-      color: "#ff4d4d",
-      weight: 3,
-      dashArray: "5,5",
-    }
-  ).addTo(map);
-
-  pathLine = L.polyline([], {
-    color: "#08a18b",
-    weight: 4,
-  }).addTo(map);
-}
+// function initMap() { ... }  ← COMMENTED OUT
+// initMap() call removed
 
 // ---------------------------
 // DOM READY
 // ---------------------------
 window.addEventListener("DOMContentLoaded", () => {
-  // cache DOM elements
+
+  // cache DOM references
   latEl = document.getElementById("lat");
   lngEl = document.getElementById("lng");
   headingEl = document.getElementById("heading");
@@ -81,12 +61,9 @@ window.addEventListener("DOMContentLoaded", () => {
   timeEl = document.getElementById("timestamp");
   logBody = document.getElementById("logBody");
 
-  // initialise text
+  // set initial text
   if (headingEl) headingEl.textContent = "--";
   if (compassTextEl) compassTextEl.textContent = "--";
-
-  // init map
-  initMap();
 
   // ---------------------------
   // START / STOP TRACKING
@@ -115,7 +92,9 @@ window.addEventListener("DOMContentLoaded", () => {
 
   if (gpsButton) {
     gpsButton.addEventListener("click", () => {
+
       if (!usingDeviceGPS) {
+
         if (!navigator.geolocation) {
           alert("navigator.geolocation NOT available");
           return;
@@ -125,18 +104,11 @@ window.addEventListener("DOMContentLoaded", () => {
         gpsButton.style.backgroundColor = "#4CAF50";
         usingDeviceGPS = true;
 
-        // Start GPS watch
         geoWatchId = navigator.geolocation.watchPosition(
           (pos) => {
             latestLat = pos.coords.latitude;
             latestLng = pos.coords.longitude;
 
-            // GPS heading (course over ground) fallback if provided
-            if (pos.coords.heading !== null && !isNaN(pos.coords.heading)) {
-              currentHeading = pos.coords.heading;
-            }
-
-            // Update everything
             window.updateGPS(latestLat, latestLng, Date.now());
           },
           (err) => {
@@ -144,12 +116,12 @@ window.addEventListener("DOMContentLoaded", () => {
           },
           {
             enableHighAccuracy: true,
-            timeout: 60000,    // give RC Plus more time for a fix
+            timeout: 60000,
             maximumAge: 1000,
           }
         );
       } else {
-        // Stop GPS
+
         if (geoWatchId !== null) navigator.geolocation.clearWatch(geoWatchId);
         gpsButton.textContent = "Use Device GPS";
         gpsButton.style.backgroundColor = "#ffa500";
@@ -159,7 +131,7 @@ window.addEventListener("DOMContentLoaded", () => {
   }
 
   // ---------------------------
-  // RESET APP BUTTON (CUSTOM MODAL)
+  // RESET APP
   // ---------------------------
   const resetBtn = document.getElementById("resetApp");
   const resetModal = document.getElementById("resetModal");
@@ -167,21 +139,18 @@ window.addEventListener("DOMContentLoaded", () => {
   const resetConfirm = document.getElementById("resetConfirm");
 
   if (resetBtn && resetModal && resetCancel && resetConfirm) {
-    // Open modal instead of confirm()
+
     resetBtn.addEventListener("click", () => {
       resetModal.style.display = "flex";
     });
 
-    // Cancel
     resetCancel.addEventListener("click", () => {
       resetModal.style.display = "none";
     });
 
-    // Confirm reset
     resetConfirm.addEventListener("click", () => {
       resetModal.style.display = "none";
 
-      // Stop tracking
       isTracking = false;
 
       const startBtn = document.getElementById("startTracking");
@@ -189,49 +158,23 @@ window.addEventListener("DOMContentLoaded", () => {
       if (startBtn) startBtn.disabled = false;
       if (stopBtn) stopBtn.disabled = true;
 
-      // Clear live data
       if (latEl) latEl.textContent = "--";
       if (lngEl) lngEl.textContent = "--";
       if (headingEl) headingEl.textContent = "--";
       if (compassTextEl) compassTextEl.textContent = "--";
       if (timeEl) timeEl.textContent = "--";
 
-      // Reset data
       trackingLog = [];
       pathCoordinates = [];
 
-      // Clear map objects safely
-      try {
-        if (pathLine) pathLine.setLatLngs([]);
-        if (headingLine)
-          headingLine.setLatLngs([
-            [0, 0],
-            [0, 0],
-          ]);
-
-        if (takeOffMarker && map) {
-          map.removeLayer(takeOffMarker);
-          takeOffMarker = null;
-        }
-
-        if (liveMarker) {
-          if (latestLat !== null && latestLng !== null) {
-            liveMarker.setLatLng([latestLat, latestLng]);
-          } else {
-            liveMarker.setLatLng([0, 0]);
-          }
-        }
-      } catch (e) {
-        alert("Reset error: " + e.message);
-      }
-
+      // all map clears disabled
       if (logBody) logBody.innerHTML = "";
     });
   }
 });
 
 // ---------------------------
-// MARK TAKE-OFF BUTTON
+// MARK TAKE-OFF (map disabled)
 // ---------------------------
 const takeoffBtn = document.getElementById("markTakeOff");
 
@@ -245,29 +188,18 @@ if (takeoffBtn) {
 
     const last = trackingLog[trackingLog.length - 1];
 
-    // Add red marker to map
-    if (takeOffMarker) map.removeLayer(takeOffMarker);
+    // map marker disabled:
+    // L.marker([...]).addTo(map)
 
-    takeOffMarker = L.marker([last.lat, last.lng], {
-      icon: L.icon({
-        iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-red.png",
-        iconSize: [25, 41],
-        iconAnchor: [12, 41]
-      })
-    }).addTo(map).bindPopup("Take-Off Location");
-
-    // Update TABLE (Take-Off column = index 5)
     const lastRow = logBody.lastElementChild;
     if (lastRow) lastRow.children[5].textContent = "✔";
 
-    // Update DATA
     last.takeoff = true;
   });
 }
 
-
 // ---------------------------
-// DROP NOTE BUTTON
+// DROP NOTE (map disabled)
 // ---------------------------
 const dropNoteBtn = document.getElementById("dropNote");
 const noteInput = document.getElementById("noteInput");
@@ -282,20 +214,17 @@ if (dropNoteBtn && noteInput) {
 
     const note = noteInput.value.trim();
     if (!note) {
-        noteInput.classList.add("shake");
-        setTimeout(() => noteInput.classList.remove("shake"), 600);
-        return;
+      noteInput.classList.add("shake");
+      setTimeout(() => noteInput.classList.remove("shake"), 600);
+      return;
     }
 
     const last = trackingLog[trackingLog.length - 1];
     last.note = note;
 
-    // Add marker to map
-    L.marker([last.lat, last.lng])
-      .addTo(map)
-      .bindPopup("Note: " + note);
+    // map disabled:
+    // L.marker([last.lat,last.lng]).addTo(map).bindPopup(...)
 
-    // Update TABLE (Note column = index 4)
     const lastRow = logBody.lastElementChild;
     if (lastRow) lastRow.children[4].textContent = note;
 
@@ -304,7 +233,7 @@ if (dropNoteBtn && noteInput) {
 }
 
 // ---------------------------
-// TRANSPORT MODE DROPDOWN
+// TRANSPORT MODE
 // ---------------------------
 const transportSelect = document.getElementById("transportMode");
 
@@ -321,7 +250,6 @@ if (transportSelect) {
 // UPDATE GPS & LOGGING
 // ---------------------------
 window.updateGPS = function (lat, lng, timestamp) {
-  if (!latEl || !lngEl || !timeEl) return;
 
   const t = new Date(timestamp).toLocaleTimeString();
 
@@ -329,38 +257,22 @@ window.updateGPS = function (lat, lng, timestamp) {
   lngEl.textContent = lng.toFixed(6);
   timeEl.textContent = t;
 
-  // Keep UI heading text in sync (using GPS heading if we have it)
   if (headingEl) headingEl.textContent = currentHeading.toFixed(0) + "°";
-  if (compassTextEl)
-    compassTextEl.textContent = getDirectionFromHeading(currentHeading);
+  if (compassTextEl) compassTextEl.textContent = getDirectionFromHeading(currentHeading);
 
-  // Update map marker
-  if (liveMarker) liveMarker.setLatLng([lat, lng]);
-  if (autoFollow && map) map.setView([lat, lng]);
-
-  // Update heading line (short line in front of marker)
-  if (headingLine) {
-    const dist = 0.0003;
-    const rad = (currentHeading * Math.PI) / 180;
-    const destLat = lat + dist * Math.cos(rad);
-    const destLng = lng + dist * Math.sin(rad);
-
-    headingLine.setLatLngs([
-      [lat, lng],
-      [destLat, destLng],
-    ]);
-  }
+  // ALL MAP OPERATIONS DISABLED
+  // if (liveMarker) liveMarker.setLatLng([lat,lng]);
+  // if (map && autoFollow) map.setView([lat,lng]);
 
   if (!isTracking) return;
 
-  // Track path
   pathCoordinates.push([lat, lng]);
-  if (pathLine) pathLine.setLatLngs(pathCoordinates);
 
-  // Logging table
-  if (logBody) {
-    const row = document.createElement("tr");
-    row.innerHTML = `
+  // map disabled:
+  // if (pathLine) pathLine.setLatLngs(pathCoordinates);
+
+  const row = document.createElement("tr");
+  row.innerHTML = `
       <td>${t}</td>
       <td>${lat.toFixed(6)}</td>
       <td>${lng.toFixed(6)}</td>
@@ -368,10 +280,9 @@ window.updateGPS = function (lat, lng, timestamp) {
       <td>--</td>
       <td>--</td>
       <td>${currentTransportMode}</td>
-      <td>--</td>
+      <td>${activeUser}</td>
     `;
-    logBody.appendChild(row);
-  }
+  logBody.appendChild(row);
 
   trackingLog.push({
     time: t,
@@ -379,11 +290,12 @@ window.updateGPS = function (lat, lng, timestamp) {
     lng,
     heading: currentHeading,
     transport: currentTransportMode,
+    user: activeUser
   });
 };
 
 // ---------------------------
-// (Optional) Native heading hook – safe no-op if unused
+// HEADING FROM ANDROID
 // ---------------------------
 window.updateHeadingFromNative = function (deg) {
   currentHeading = deg;

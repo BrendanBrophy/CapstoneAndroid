@@ -1,8 +1,9 @@
 package com.detect.capstone
 
 import android.Manifest
-import android.annotation.SuppressLint
-import android.content.Context
+import android.app.Activity
+import android.content.Intent
+import android.net.Uri
 import android.content.pm.PackageManager
 import android.hardware.Sensor
 import android.hardware.SensorEvent
@@ -13,13 +14,20 @@ import android.webkit.GeolocationPermissions
 import android.webkit.WebChromeClient
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 
 class MainActivity : AppCompatActivity(), SensorEventListener {
 
     private lateinit var webView: WebView
-    private val GEO_PERMISSION = 111
+
+    // SAF-export folder
+    var exportFolderUri: Uri? = null
+    private val REQUEST_EXPORT_FOLDER = 9911
+
+    // Bridge for JS <-> Android
+    lateinit var androidBridge: AndroidBridge
 
     // Compass sensor fields
     private lateinit var sensorManager: SensorManager
@@ -27,12 +35,16 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
     private val rotationMatrix = FloatArray(9)
     private val orientation = FloatArray(3)
 
-    @SuppressLint("SetJavaScriptEnabled")
+    // For RELATIVE heading (0° at app boot orientation)
+    private var baseHeadingDeg: Float? = null
+
+    private val GEO_PERMISSION = 111
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        // Request location permissions
+        // ----- Location permissions -----
         if (ActivityCompat.checkSelfPermission(
                 this,
                 Manifest.permission.ACCESS_FINE_LOCATION
@@ -48,22 +60,16 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
             )
         }
 
+        // ----- WebView setup -----
         webView = findViewById(R.id.webview)
         val settings = webView.settings
-
         settings.javaScriptEnabled = true
         settings.domStorageEnabled = true
         settings.allowFileAccess = true
-        settings.allowContentAccess = true
-        settings.allowUniversalAccessFromFileURLs = true
         settings.allowFileAccessFromFileURLs = true
-        settings.databaseEnabled = true
-        settings.setGeolocationEnabled(true)
-        settings.setGeolocationDatabasePath(filesDir.path)
+        settings.allowUniversalAccessFromFileURLs = true
 
         webView.webViewClient = WebViewClient()
-
-        // Allow geolocation in WebView
         webView.webChromeClient = object : WebChromeClient() {
             override fun onGeolocationPermissionsShowPrompt(
                 origin: String?,
@@ -73,13 +79,49 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
             }
         }
 
+        // JS bridge (export, etc.)
+        androidBridge = AndroidBridge(this)
+        webView.addJavascriptInterface(androidBridge, "AndroidBridge")
+
         webView.loadUrl("file:///android_asset/www/index.html")
 
-        // ----- SENSOR / COMPASS SETUP -----
-        sensorManager = getSystemService(Context.SENSOR_SERVICE) as SensorManager
+        // ----- Compass / heading sensor -----
+        sensorManager = getSystemService(SENSOR_SERVICE) as SensorManager
         rotationVectorSensor = sensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR)
     }
 
+    // SAF folder picker – called from AndroidBridge
+    fun pickExportFolder() {
+        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE)
+        intent.addFlags(
+            Intent.FLAG_GRANT_READ_URI_PERMISSION or
+                    Intent.FLAG_GRANT_WRITE_URI_PERMISSION or
+                    Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION
+        )
+        startActivityForResult(intent, REQUEST_EXPORT_FOLDER)
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+
+        if (requestCode == REQUEST_EXPORT_FOLDER && resultCode == Activity.RESULT_OK) {
+            data?.data?.let { uri ->
+                contentResolver.takePersistableUriPermission(
+                    uri,
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION or
+                            Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                )
+
+                exportFolderUri = uri
+                Toast.makeText(this, "Folder selected!", Toast.LENGTH_LONG).show()
+
+                // Continue any pending export
+                androidBridge.exportPendingFiles()
+            }
+        }
+    }
+
+    // ---- Sensor lifecycle ----
     override fun onResume() {
         super.onResume()
         rotationVectorSensor?.let {
@@ -92,25 +134,37 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         sensorManager.unregisterListener(this)
     }
 
+    // ---- Sensor callback: compute RELATIVE heading and send to JS ----
     override fun onSensorChanged(event: SensorEvent) {
         if (event.sensor.type == Sensor.TYPE_ROTATION_VECTOR) {
-
             SensorManager.getRotationMatrixFromVector(rotationMatrix, event.values)
             SensorManager.getOrientation(rotationMatrix, orientation)
 
             val azimuthRad = orientation[0]
             var azimuthDeg = Math.toDegrees(azimuthRad.toDouble()).toFloat()
+            if (azimuthDeg < 0) azimuthDeg += 360f  // 0..360 absolute
 
-            if (azimuthDeg < 0) {
-                azimuthDeg += 360f
+            // Set base heading once at startup to define "0°"
+            if (baseHeadingDeg == null) {
+                baseHeadingDeg = azimuthDeg
             }
 
-            val js = "window.updateHeadingFromNative(${azimuthDeg});"
+            val base = baseHeadingDeg ?: azimuthDeg
+            var relative = azimuthDeg - base
+            if (relative < 0f) relative += 360f
+            if (relative >= 360f) relative -= 360f
+
+            // Debug in Logcat
+            println("RAW HEADING: $azimuthDeg  RELATIVE: $relative")
+
+            val js = "window.updateHeadingFromNative(${relative});"
             webView.post {
                 webView.evaluateJavascript(js, null)
             }
         }
     }
 
-    override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) { }
+    override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {
+        // no-op
+    }
 }

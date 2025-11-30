@@ -140,11 +140,14 @@
     </style>
 </head>
 <body>
-<div id="map"></div>
+
+<!-- map commented out until further notice-->
+<!-- <div id="map"></div> -->
+
 <div id="compassLabel">--</div>
 
 <header class="main-header">
-    <h1>GPS Tracker</h1>
+    <h1>TrackPoint by Detect</h1>
 </header>
 
 <nav class="tab-nav">
@@ -209,20 +212,23 @@
                     <option>Helicopter</option>
                     <option>Other</option>
                 </select>
-
+            </div>
+                <!--
                 <button id="recenterMap">Recenter Map</button>
 
                 <button id="preDownloadBtn" class="btn btn-secondary">
                     Pre-Download Area
                 </button>
-            </div>
+                -->
 
+            <!--
             <div class="follow-toggle">
                 <label>
                     <input type="checkbox" id="followMap" checked>
                     Follow My Location
                 </label>
-            </div>
+-->
+
         </section>
     </div>
 
@@ -239,7 +245,7 @@
                     <th>Note</th>
                     <th>Take-Off</th>
                     <th>Transportation</th>
-                    <th>Inferred Transportation</th>
+                    <th>User</th>
                 </tr>
                 </thead>
                 <tbody id="logBody"></tbody>
@@ -251,6 +257,7 @@
     </div>
 
     <!-- Download Map Modal (unchanged UI, not wired yet) -->
+    <!--
     <div id="preDownloadModal" class="pd-modal" style="display:none;">
         <div class="pd-modal-inner">
             <h3>Pre-Download Map Area</h3>
@@ -290,6 +297,7 @@
             </div>
         </div>
     </div>
+    -->
 </main>
 
 <!-- JS logic -->
@@ -311,5 +319,6 @@
       document.getElementById("showTrackerTab").classList.remove("active-tab");
     });
 </script>
+
 </body>
 </html>
