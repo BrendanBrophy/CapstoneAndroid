@@ -1,89 +1,39 @@
-// ============================
-// Global State
-// ============================
 let notes = JSON.parse(localStorage.getItem("geoNotes")) || [];
 let currentCoords = null;
 let watchId = null;
 let loggingInterval = null;
-let userHeading = 0;
-let marker = null;
-let map = null;
+let userHeading = 0; // Default heading
+let marker = null; // Global marker variable
+let map = null; // Global map variable
 
-// ============================
-// COMPASS HANDLING
-// ============================
 function startCompass() {
     if (typeof compassActive === 'undefined') {
-        window.compassActive = false;
+        window.compassActive = false; // Ensure it's only defined once
     }
 
     if (!compassActive) {
         console.log("Starting compass tracking...");
         
-        window.updateHeadingFromNative = function (headingDeg) {
-            userHeading = headingDeg;
+        window.addEventListener("deviceorientationabsolute", event => {
+            if (event.alpha !== null) {
+                userHeading = event.alpha; // Update global userHeading
+                
+                // Rotate the arrow based on heading
+                let arrow = document.querySelector('.custom-user-icon .arrow');
+                if (arrow) {
+                    arrow.style.transform = `rotate(${userHeading}deg)`;
+                }
 
-            const arrow = document.querySelector('.custom-user-icon .arrow');
-            if (arrow) {
-                arrow.style.transform = `rotate(${userHeading}deg)`;
+                console.log("Updated Heading:", userHeading);
             }
-        };
+        });
 
         compassActive = true;
     }
 }
 
-// ============================
-// NATIVE AND BROWSER GPS SUPPORT
-// ============================
-
-// Used by Android → JS
-window.updateGPSFromNative = function(lat, lng) {
-    currentCoords = { latitude: lat, longitude: lng, heading: userHeading };
-
-    console.log("Native GPS:", lat, lng, "Heading:", userHeading);
-
-    // Initialize map if needed
-    if (!map) {
-        initializeMap(lat, lng);
-    }
-
-    // Create marker if needed
-    if (!marker) {
-        marker = L.marker([lat, lng]).addTo(map);
-    } else {
-        marker.setLatLng([lat, lng]);
-    }
-
-    map.setView([lat, lng], 16);
-
-    // Logging
-    logTrackingData(lat, lng, userHeading);
-
-    const status = document.getElementById('status');
-    if (status) {
-        status.innerText = `Latitude: ${lat}, Longitude: ${lng}, Heading: ${userHeading.toFixed(2)}°`;
-    }
-};
-
-// ============================
-// Start Tracking
-// ============================
+// Start tracking the user's location
 function startTracking() {
-
-    // ---- NATIVE GPS (DJI RC Plus, Android WebView) ----
-    if (window.AndroidBridge) {
-        console.log("Using native Android GPS — browser geolocation disabled.");
-
-        localStorage.setItem("locationHistory", JSON.stringify([]));
-
-        document.getElementById('startTrackingBtn').style.display = 'none';
-        document.getElementById('stopTrackingBtn').style.display = 'inline-block';
-
-        return;  // native GPS will handle updates automatically
-    }
-
-    // ---- BROWSER GPS (fallback for phones/laptops) ----
     if (navigator.geolocation) {
         localStorage.setItem("locationHistory", JSON.stringify([]));
 
@@ -107,9 +57,6 @@ function startTracking() {
     }
 }
 
-// ============================
-// Map Initialization
-// ============================
 function initializeMap(lat, lng) {
     if (!map) {
         map = L.map('map').setView([lat, lng], 16);
@@ -118,62 +65,61 @@ function initializeMap(lat, lng) {
         }).addTo(map);
     }
 
+    // Ensure marker is created
     if (!marker) {
         console.log("Creating marker at:", lat, lng);
         marker = L.marker([lat, lng]).addTo(map);
     }
 }
 
-// ============================
-// Browser GPS Update (fallback)
-// ============================
+// Update location and save to history
 function updateLocation(position) {
     const { latitude, longitude } = position.coords;
     currentCoords = { latitude, longitude, heading: userHeading };
 
-    console.log("Browser GPS:", latitude, longitude, "Heading:", userHeading);
+    console.log("Updating location to:", latitude, longitude, "Heading:", userHeading);
+
+    document.getElementById('status').innerText = 
+        `Latitude: ${latitude}, Longitude: ${longitude}, Heading: ${userHeading.toFixed(2)}°`;
 
     if (!map) {
+        console.log("Initializing map...");
         initializeMap(latitude, longitude);
     }
 
     if (!marker) {
+        console.log("Creating marker...");
         marker = L.marker([latitude, longitude]).addTo(map);
     } else {
+        console.log("Updating marker position...");
         marker.setLatLng([latitude, longitude]);
     }
 
     map.setView([latitude, longitude], 16);
-
-    logTrackingData(latitude, longitude, userHeading);
-
-    document.getElementById('status').innerText =
-        `Latitude: ${latitude}, Longitude: ${longitude}, Heading: ${userHeading.toFixed(2)}°`;
 }
 
-// ============================
-// Tracking Log
-// ============================
+
+
+// Log tracking data (Lat, Lng, Heading)
 function logTrackingData(lat, lng, heading) {
     let timestamp = new Date().toLocaleTimeString();
     let history = JSON.parse(localStorage.getItem("locationHistory")) || [];
-
     history.push(`${timestamp} - Lat: ${lat}, Lng: ${lng}, Heading: ${heading.toFixed(2)}°`);
     localStorage.setItem("locationHistory", JSON.stringify(history));
 }
 
-// ============================
-// Notes Functions
-// ============================
+// Show note form
 function showNoteForm() {
     document.getElementById("noteForm").style.display = "block";
 }
 
+// Close note form
 function closeNoteForm() {
     document.getElementById("noteForm").style.display = "none";
     document.getElementById("noteText").value = "";
 }
 
+// Save a geotagged note
 function saveNote() {
     let noteText = document.getElementById("noteText").value.trim();
     if (noteText === "" || !currentCoords) {
@@ -190,6 +136,7 @@ function saveNote() {
     closeNoteForm();
 }
 
+// Append note to tracking log
 function logNoteToTracking(note) {
     let timestamp = new Date().toLocaleTimeString();
     let history = JSON.parse(localStorage.getItem("locationHistory")) || [];
@@ -197,34 +144,30 @@ function logNoteToTracking(note) {
     localStorage.setItem("locationHistory", JSON.stringify(history));
 }
 
+// Load tracking history
 function loadHistory() {
     let history = JSON.parse(localStorage.getItem("locationHistory")) || [];
     let historyDiv = document.getElementById("trackingHistory");
     historyDiv.innerHTML = history.map(entry => `<p>${entry}</p>`).join('');
 }
 
-// ============================
-// Stop Tracking
-// ============================
+// Stop tracking
 function stopTracking() {
     if (watchId !== null) {
         navigator.geolocation.clearWatch(watchId);
         watchId = null;
-    }
+        document.getElementById('status').innerText = "Tracking stopped.";
+        document.getElementById('stopTrackingBtn').style.display = 'none';
+        document.getElementById('startTrackingBtn').style.display = 'inline-block';
 
-    document.getElementById('status').innerText = "Tracking stopped.";
-    document.getElementById('stopTrackingBtn').style.display = 'none';
-    document.getElementById('startTrackingBtn').style.display = 'inline-block';
-
-    if (loggingInterval !== null) {
-        clearInterval(loggingInterval);
-        loggingInterval = null;
+        if (loggingInterval !== null) {
+            clearInterval(loggingInterval);
+            loggingInterval = null;
+        }
     }
 }
 
-// ============================
-// Error Handling
-// ============================
+// Handle geolocation errors
 function handleError(error) {
     switch (error.code) {
         case error.PERMISSION_DENIED:
