@@ -17,9 +17,6 @@ import android.webkit.WebViewClient
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
-import android.location.Location
-import android.location.LocationListener
-import android.location.LocationManager
 
 class MainActivity : AppCompatActivity(), SensorEventListener {
 
@@ -38,26 +35,10 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
     private val rotationMatrix = FloatArray(9)
     private val orientation = FloatArray(3)
 
-    // GPS manager
-    private lateinit var locationManager: LocationManager
-
     // For RELATIVE heading (0° at app boot orientation)
     private var baseHeadingDeg: Float? = null
 
     private val GEO_PERMISSION = 111
-
-    // ---- GPS Listener ----
-    private val gpsListener = object : LocationListener {
-        override fun onLocationChanged(location: Location) {
-            val lat = location.latitude
-            val lng = location.longitude
-
-            val js = "window.updateGPSFromNative($lat, $lng);"
-            webView.post {
-                webView.evaluateJavascript(js, null)
-            }
-        }
-    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -107,22 +88,6 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         // ----- Compass / heading sensor -----
         sensorManager = getSystemService(SENSOR_SERVICE) as SensorManager
         rotationVectorSensor = sensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR)
-
-        // ----- GPS setup (CORRECTED LOCATION) -----
-        locationManager = getSystemService(LOCATION_SERVICE) as LocationManager
-
-        if (ActivityCompat.checkSelfPermission(
-                this,
-                Manifest.permission.ACCESS_FINE_LOCATION
-            ) == PackageManager.PERMISSION_GRANTED
-        ) {
-            locationManager.requestLocationUpdates(
-                LocationManager.GPS_PROVIDER,
-                1000L,
-                0f,
-                gpsListener
-            )
-        }
     }
 
     // SAF folder picker – called from AndroidBridge
@@ -162,25 +127,11 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         rotationVectorSensor?.let {
             sensorManager.registerListener(this, it, SensorManager.SENSOR_DELAY_GAME)
         }
-
-        if (ActivityCompat.checkSelfPermission(
-                this,
-                Manifest.permission.ACCESS_FINE_LOCATION
-            ) == PackageManager.PERMISSION_GRANTED
-        ) {
-            locationManager.requestLocationUpdates(
-                LocationManager.GPS_PROVIDER,
-                1000L,
-                0f,
-                gpsListener
-            )
-        }
     }
 
     override fun onPause() {
         super.onPause()
         sensorManager.unregisterListener(this)
-        locationManager.removeUpdates(gpsListener)
     }
 
     // ---- Sensor callback: compute RELATIVE heading and send to JS ----
@@ -202,6 +153,9 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
             var relative = azimuthDeg - base
             if (relative < 0f) relative += 360f
             if (relative >= 360f) relative -= 360f
+
+            // Debug in Logcat
+            println("RAW HEADING: $azimuthDeg  RELATIVE: $relative")
 
             val js = "window.updateHeadingFromNative(${relative});"
             webView.post {
