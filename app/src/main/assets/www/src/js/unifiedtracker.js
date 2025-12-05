@@ -29,8 +29,14 @@ let latestLng = null;
 let currentTransportMode =
   localStorage.getItem("transportMode") || "Walking";
 
+// --- INFERRED TRANSPORT STATE ---
+let gpsBuffer = [];          // recent GPS points for speed calc
+let lastSpeedKmh = null;     // latest estimated speed
+let lastInferredMode = "Other";  // latest inferred transport mode
+
 // DOM refs
 let latEl, lngEl, headingEl, timeEl, logBody, compassTextEl;
+let inferredModeEl, transportLabelEl;
 
 // ---------------------------
 // DIRECTION UTILITY (simple)
@@ -39,6 +45,49 @@ function getDirectionFromHeading(deg) {
   const dirs = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
   const index = Math.round(deg / 45) % 8;
   return dirs[index];
+}
+
+// ---------------------------
+// SPEED / INFERRED MODE UTILS
+// ---------------------------
+
+// Haversine distance in meters
+function haversineDistance(lat1, lng1, lat2, lng2) {
+  const R = 6371000; // m
+  const toRad = (d) => (d * Math.PI) / 180;
+
+  const dLat = toRad(lat2 - lat1);
+  const dLng = toRad(lng2 - lng1);
+
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(toRad(lat1)) *
+      Math.cos(toRad(lat2)) *
+      Math.sin(dLng / 2) *
+      Math.sin(dLng / 2);
+
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
+/**
+ * Map speed (km/h) into one of the dropdown categories:
+ *  Walking / ATV / Truck / Helicopter / Other
+ */
+function inferTransportFromSpeed(speedKmh) {
+  if (speedKmh == null || !isFinite(speedKmh)) {
+    return "Other";
+  }
+
+  // Rough heuristics, tweak if needed:
+  //  0–6 km/h  → Walking
+  //  6–45 km/h → ATV
+  // 45–120 km/h → Truck
+  // 120+ km/h  → Helicopter
+  if (speedKmh < 6) return "Walking";
+  if (speedKmh < 45) return "ATV";
+  if (speedKmh < 120) return "Truck";
+  return "Helicopter";
 }
 
 /* =====================
@@ -60,10 +109,15 @@ window.addEventListener("DOMContentLoaded", () => {
   compassTextEl = document.getElementById("compassText");
   timeEl = document.getElementById("timestamp");
   logBody = document.getElementById("logBody");
+  inferredModeEl = document.getElementById("inferredMode");
+  transportLabelEl = document.getElementById("transportLabel");
 
   // set initial text
   if (headingEl) headingEl.textContent = "--";
   if (compassTextEl) compassTextEl.textContent = "--";
+  if (timeEl) timeEl.textContent = "--";
+  if (inferredModeEl) inferredModeEl.textContent = lastInferredMode;
+  if (transportLabelEl) transportLabelEl.textContent = currentTransportMode;
 
   // ---------------------------
   // START / STOP TRACKING
@@ -163,11 +217,15 @@ window.addEventListener("DOMContentLoaded", () => {
       if (headingEl) headingEl.textContent = "--";
       if (compassTextEl) compassTextEl.textContent = "--";
       if (timeEl) timeEl.textContent = "--";
+      if (inferredModeEl) inferredModeEl.textContent = "Other";
+      if (transportLabelEl) transportLabelEl.textContent = currentTransportMode;
 
       trackingLog = [];
       pathCoordinates = [];
+      gpsBuffer = [];
+      lastSpeedKmh = null;
+      lastInferredMode = "Other";
 
-      // all map clears disabled
       if (logBody) logBody.innerHTML = "";
     });
   }
@@ -188,11 +246,8 @@ if (takeoffBtn) {
 
     const last = trackingLog[trackingLog.length - 1];
 
-    // map marker disabled:
-    // L.marker([...]).addTo(map)
-
     const lastRow = logBody.lastElementChild;
-    if (lastRow) lastRow.children[5].textContent = "✔";
+    if (lastRow) lastRow.children[5].textContent = "✔"; // Take-Off column
 
     last.takeoff = true;
   });
@@ -222,18 +277,15 @@ if (dropNoteBtn && noteInput) {
     const last = trackingLog[trackingLog.length - 1];
     last.note = note;
 
-    // map disabled:
-    // L.marker([last.lat,last.lng]).addTo(map).bindPopup(...)
-
     const lastRow = logBody.lastElementChild;
-    if (lastRow) lastRow.children[4].textContent = note;
+    if (lastRow) lastRow.children[4].textContent = note; // Note column
 
     noteInput.value = "";
   });
 }
 
 // ---------------------------
-// TRANSPORT MODE
+// TRANSPORT MODE (MANUAL)
 // ---------------------------
 const transportSelect = document.getElementById("transportMode");
 
@@ -243,6 +295,9 @@ if (transportSelect) {
   transportSelect.addEventListener("change", () => {
     currentTransportMode = transportSelect.value;
     localStorage.setItem("transportMode", currentTransportMode);
+    if (transportLabelEl) {
+      transportLabelEl.textContent = currentTransportMode;
+    }
   });
 }
 
@@ -253,23 +308,52 @@ window.updateGPS = function (lat, lng, timestamp) {
 
   const t = new Date(timestamp).toLocaleTimeString();
 
-  latEl.textContent = lat.toFixed(6);
-  lngEl.textContent = lng.toFixed(6);
-  timeEl.textContent = t;
+  if (latEl) latEl.textContent = lat.toFixed(6);
+  if (lngEl) lngEl.textContent = lng.toFixed(6);
+  if (timeEl) timeEl.textContent = t;
 
   if (headingEl) headingEl.textContent = currentHeading.toFixed(0) + "°";
   if (compassTextEl) compassTextEl.textContent = getDirectionFromHeading(currentHeading);
 
-  // ALL MAP OPERATIONS DISABLED
-  // if (liveMarker) liveMarker.setLatLng([lat,lng]);
-  // if (map && autoFollow) map.setView([lat,lng]);
+  // --- SPEED / INFERRED MODE CALC ---
+  gpsBuffer.push({ lat, lng, timestamp });
+
+  // keep last 3 points
+  if (gpsBuffer.length > 3) gpsBuffer.shift();
+
+  if (gpsBuffer.length >= 2) {
+    const p1 = gpsBuffer[gpsBuffer.length - 2];
+    const p2 = gpsBuffer[gpsBuffer.length - 1];
+
+    const dtSec = (p2.timestamp - p1.timestamp) / 1000;
+    const distM = haversineDistance(p1.lat, p1.lng, p2.lat, p2.lng);
+
+    if (dtSec > 0) {
+      const speedMs = distM / dtSec;
+      lastSpeedKmh = speedMs * 3.6;
+
+      // ignore crazy spikes
+      if (lastSpeedKmh > 400) {
+        lastSpeedKmh = null;
+      }
+    }
+
+    lastInferredMode = inferTransportFromSpeed(lastSpeedKmh);
+  } else {
+    lastSpeedKmh = null;
+    lastInferredMode = "Other";
+  }
+
+  if (inferredModeEl) {
+    inferredModeEl.textContent = lastInferredMode;
+  }
+  if (transportLabelEl) {
+    transportLabelEl.textContent = currentTransportMode;
+  }
 
   if (!isTracking) return;
 
   pathCoordinates.push([lat, lng]);
-
-  // map disabled:
-  // if (pathLine) pathLine.setLatLngs(pathCoordinates);
 
   const row = document.createElement("tr");
   row.innerHTML = `
@@ -280,6 +364,7 @@ window.updateGPS = function (lat, lng, timestamp) {
       <td>--</td>
       <td>--</td>
       <td>${currentTransportMode}</td>
+      <td>${lastInferredMode}</td>
       <td>${activeUser}</td>
     `;
   logBody.appendChild(row);
@@ -289,7 +374,9 @@ window.updateGPS = function (lat, lng, timestamp) {
     lat,
     lng,
     heading: currentHeading,
-    transport: currentTransportMode,
+    transport: currentTransportMode,      // manual
+    inferredTransport: lastInferredMode,  // inferred (matches dropdown list)
+    speedKmh: lastSpeedKmh,
     user: activeUser
   });
 };
