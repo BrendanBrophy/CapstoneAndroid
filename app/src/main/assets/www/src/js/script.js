@@ -13,11 +13,11 @@ function startCompass() {
 
     if (!compassActive) {
         console.log("Starting compass tracking...");
-        
+
         window.addEventListener("deviceorientationabsolute", event => {
             if (event.alpha !== null) {
                 userHeading = event.alpha; // Update global userHeading
-                
+
                 // Rotate the arrow based on heading
                 let arrow = document.querySelector('.custom-user-icon .arrow');
                 if (arrow) {
@@ -50,7 +50,7 @@ function startTracking() {
                 if (currentCoords) {
                     logTrackingData(currentCoords.latitude, currentCoords.longitude, userHeading);
                 }
-            }, 2000);
+            }, 10000);
         }
     } else {
         document.getElementById('status').innerText = "Geolocation is not supported by this browser.";
@@ -79,7 +79,7 @@ function updateLocation(position) {
 
     console.log("Updating location to:", latitude, longitude, "Heading:", userHeading);
 
-    document.getElementById('status').innerText = 
+    document.getElementById('status').innerText =
         `Latitude: ${latitude}, Longitude: ${longitude}, Heading: ${userHeading.toFixed(2)}°`;
 
     if (!map) {
@@ -97,8 +97,6 @@ function updateLocation(position) {
 
     map.setView([latitude, longitude], 16);
 }
-
-
 
 // Log tracking data (Lat, Lng, Heading)
 function logTrackingData(lat, lng, heading) {
@@ -184,4 +182,3 @@ function handleError(error) {
             break;
     }
 }
-
