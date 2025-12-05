@@ -61,11 +61,6 @@
           font-weight: bold;
           margin: 0.25rem;
         }
-        .follow-toggle {
-          margin-top: 1rem;
-          text-align: center;
-          font-weight: bold;
-        }
         #compassLabel {
           position: fixed;
           bottom: 12px;
@@ -79,70 +74,9 @@
           z-index: 999;
           font-family: 'Space Grotesk', sans-serif;
         }
-
-        /* Modal Overlay */
-        .modal-overlay {
-          position: fixed;
-          top: 0; left: 0;
-          width: 100%; height: 100%;
-          background: rgba(0,0,0,0.45);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          z-index: 9999;
-        }
-
-        /* Modal Box */
-        .modal-box {
-          background: white;
-          padding: 20px;
-          width: 80%;
-          max-width: 300px;
-          border-radius: 12px;
-          font-family: 'Space Grotesk', sans-serif;
-          text-align: center;
-          border: 2px solid #007aff;
-        }
-
-        .modal-box h2 {
-          margin-top: 0;
-          font-size: 1.3rem;
-        }
-
-        .modal-box p {
-          margin: 10px 0 20px 0;
-          font-size: 1rem;
-        }
-
-        .modal-buttons {
-          display: flex;
-          justify-content: space-between;
-        }
-
-        .modal-btn {
-          padding: 8px 16px;
-          font-size: 1rem;
-          border: none;
-          border-radius: 8px;
-          cursor: pointer;
-          font-weight: bold;
-        }
-
-        .cancel-btn {
-          background: #ddd;
-          color: #333;
-        }
-
-        .confirm-btn {
-          background: #ff4d4d;
-          color: white;
-        }
     </style>
 </head>
 <body>
-
-<!-- map commented out until further notice-->
-<!-- <div id="map"></div> -->
 
 <div id="compassLabel">--</div>
 
@@ -155,7 +89,7 @@
     <button id="showLogsTab">Logs</button>
 </nav>
 
-<!-- Custom Reset Confirmation Modal -->
+<!-- Reset Modal -->
 <div id="resetModal" class="modal-overlay" style="display:none;">
     <div class="modal-box">
         <h2>Reset App?</h2>
@@ -176,6 +110,10 @@
             <p><strong>Heading:</strong> <span id="heading">--</span></p>
             <p><strong>Direction:</strong> <span id="compassText">--</span></p>
             <p><strong>Time:</strong> <span id="timestamp">--</span></p>
+
+            <!-- Inferred Mode placed beside Transportation -->
+            <p><strong>Transportation:</strong> <span id="transportLabel">--</span></p>
+            <p><strong>Inferred Mode:</strong> <span id="inferredMode">--</span></p>
         </section>
 
         <section class="actions">
@@ -187,7 +125,7 @@
                         <input type="text" id="noteInput" placeholder="Enter note or use the mic…" />
                         <span id="micBtn" class="mic-icon" title="Voice input">🎤</span>
                     </div>
-                    <select id="noteLang" class="note-lang" title="Recognition language">
+                    <select id="noteLang" class="note-lang">
                         <option value="en-CA" selected>EN-CA</option>
                         <option value="en-US">EN-US</option>
                         <option value="fr-CA">FR-CA</option>
@@ -213,26 +151,10 @@
                     <option>Other</option>
                 </select>
             </div>
-                <!--
-                <button id="recenterMap">Recenter Map</button>
-
-                <button id="preDownloadBtn" class="btn btn-secondary">
-                    Pre-Download Area
-                </button>
-                -->
-
-            <!--
-            <div class="follow-toggle">
-                <label>
-                    <input type="checkbox" id="followMap" checked>
-                    Follow My Location
-                </label>
--->
-
         </section>
     </div>
 
-    <div id="logsTab" style="display: none;">
+    <div id="logsTab" style="display:none;">
         <section class="log-table">
             <h2>Logged Data</h2>
             <table>
@@ -245,66 +167,25 @@
                     <th>Note</th>
                     <th>Take-Off</th>
                     <th>Transportation</th>
+                    <th>Inferred Mode</th>
                     <th>User</th>
                 </tr>
                 </thead>
                 <tbody id="logBody"></tbody>
             </table>
+
             <div class="export">
                 <button id="exportData">Export as CSV & KML</button>
             </div>
         </section>
     </div>
-
-    <!-- Download Map Modal (unchanged UI, not wired yet) -->
-    <!--
-    <div id="preDownloadModal" class="pd-modal" style="display:none;">
-        <div class="pd-modal-inner">
-            <h3>Pre-Download Map Area</h3>
-            <p>Center is current map view.</p>
-
-            <label>
-                Radius (km):
-                <input id="preRadius" type="number" min="0.5" step="0.5" value="2">
-            </label>
-
-            <label>
-                Zoom min:
-                <input id="preZoomMin" type="number" value="13">
-            </label>
-
-            <label>
-                Zoom max:
-                <input id="preZoomMax" type="number" value="17">
-            </label>
-
-            <div id="preSizeText" style="margin-top:6px;font-size:0.9rem;">
-                Estimated size: --</div>
-
-            <div style="margin-top:8px;">
-                <div id="preProgressBar"
-                     style="height:8px;background:#eee;border-radius:4px;overflow:hidden;">
-                    <div id="preProgressFill"
-                         style="width:0%;height:100%;background:#08a18b;"></div>
-                </div>
-                <div id="preProgressText"
-                     style="margin-top:4px;font-size:0.85rem;">Not started</div>
-            </div>
-
-            <div style="margin-top:10px;display:flex;gap:8px;justify-content:flex-end;">
-                <button id="preCancelBtn">Close</button>
-                <button id="preStartBtn">Start Download</button>
-            </div>
-        </div>
-    </div>
-    -->
 </main>
 
 <!-- JS logic -->
 <script src="file:///android_asset/www/src/js/unifiedtracker.js"></script>
 <script src="file:///android_asset/www/src/js/exporter.js"></script>
+
 <script>
-    // Tabs wiring
     document.getElementById("showTrackerTab").addEventListener("click", () => {
       document.getElementById("trackerTab").style.display = "block";
       document.getElementById("logsTab").style.display = "none";
